@@ -1,0 +1,6 @@
+apiVersion: cluster.aks-caravel.mcm/v1alpha1
+kind: ManagedCluster
+metadata:
+  name: managedcluster-sample
+spec:
+  # TODO(user): Add fields here
