@@ -128,12 +128,12 @@ const (
 const (
 	// ManagedClusterTaintUnavailable is the key of the taint added to a managed cluster when it is not available.
 	// To be specific, the cluster has a condtion 'ManagedClusterConditionAvailable' with status of 'False';
-	ManagedClusterTaintUnavailable string = "cluster.open-cluster-management.io/unavailable"
+	ManagedClusterTaintUnavailable string = "cluster.aks-caravel.mcm/unavailable"
 	// ManagedClusterTaintUnreachable is the key of the taint added to a managed cluster when it is not reachable.
 	// To be specific,
 	// 1) The cluster has no condition 'ManagedClusterConditionAvailable';
 	// 2) Or the status of condtion 'ManagedClusterConditionAvailable' is 'Unknown';
-	ManagedClusterTaintUnreachable string = "cluster.open-cluster-management.io/unreachable"
+	ManagedClusterTaintUnreachable string = "cluster.aks-caravel.mcm/unreachable"
 )
 
 // ManagedClusterStatus represents the current status of joined managed cluster.
@@ -153,7 +153,7 @@ type ManagedClusterStatus struct {
 
 	// ClusterClaims represents cluster information that a managed cluster claims,
 	// for example a unique cluster identifier (id.k8s.io) and kubernetes version
-	// (kubeversion.open-cluster-management.io). They are written from the managed
+	// (kubeversion.aks-caravel.mcm). They are written from the managed
 	// cluster. The set of claims is not uniform across a fleet, some claims can be
 	// vendor or version specific and may not be included from all managed clusters.
 	// +optional

@@ -151,7 +151,7 @@ spec:
               clusterClaims:
                 description: ClusterClaims represents cluster information that a managed
                   cluster claims, for example a unique cluster identifier (id.k8s.io)
-                  and kubernetes version (kubeversion.open-cluster-management.io).
+                  and kubernetes version (kubeversion.aks-caravel.mcm).
                   They are written from the managed cluster. The set of claims is
                   not uniform across a fleet, some claims can be vendor or version
                   specific and may not be included from all managed clusters.
