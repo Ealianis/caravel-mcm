@@ -1,0 +1,6 @@
+domain: aks-caravel.mcm
+layout:
+- go.kubebuilder.io/v3
+projectName: caravel-mcm
+repo: github.com/Ealianis/caravel-mcm
+version: "3"
