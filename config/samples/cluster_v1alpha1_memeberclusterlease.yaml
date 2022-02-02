@@ -1,0 +1,6 @@
+apiVersion: cluster.aks-caravel.mcm/v1alpha1
+kind: MemeberClusterLease
+metadata:
+  name: memeberclusterlease-sample
+spec:
+  # TODO(user): Add fields here
