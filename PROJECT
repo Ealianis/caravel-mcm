@@ -18,7 +18,7 @@ resources:
     namespaced: true
   domain: aks-caravel.mcm
   group: cluster
-  kind: MemeberClusterLease
+  kind: MemberClusterLease
   path: github.com/Ealianis/caravel-mcm/api/v1alpha1
   version: v1alpha1
 version: "3"

@@ -65,6 +65,7 @@ type ManagedCluster struct {
 
 	Spec   ManagedClusterSpec   `json:"spec,omitempty"`
 	Status ManagedClusterStatus `json:"status,omitempty"`
+	Lease  MemberClusterLease   `json:"lease,omitempty"`
 }
 
 // ClientConfig represents the apiserver address of the managed cluster.
@@ -78,9 +79,7 @@ type ClientConfig struct {
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
 
-	// SecretRef is the name of the secret that contains the user credential to operate on the member cluster
-	// it must have a "token" key or "tls.crt/tls.key" key pair
-	// +required
+	// SecretRef This will make sure that the secret we are looking at is a correct [Secret]
 	SecretRef string `json:"secretRef"`
 }
 
