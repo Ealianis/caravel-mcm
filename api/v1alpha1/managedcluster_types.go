@@ -21,22 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-
-// ManagedCluster is the Schema for the managedclusters API
-type ManagedCluster struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   ManagedClusterSpec   `json:"spec,omitempty"`
-	Status ManagedClusterStatus `json:"status,omitempty"`
-}
-
-//+kubebuilder:object:root=true
 
 // ManagedClusterSpec defines the desired state of ManagedCluster
 type ManagedClusterSpec struct {
@@ -70,8 +55,19 @@ type ManagedClusterSpec struct {
 	Taints []Taint `json:"taints,omitempty"`
 }
 
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+
+// ManagedCluster is the Schema for the managedclusters API
+type ManagedCluster struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ManagedClusterSpec   `json:"spec,omitempty"`
+	Status ManagedClusterStatus `json:"status,omitempty"`
+}
+
 // ClientConfig represents the apiserver address of the managed cluster.
-// TODO include credential to connect to managed cluster kube-apiserver
 type ClientConfig struct {
 	// URL is the URL of apiserver endpoint of the managed cluster.
 	// +required
@@ -81,6 +77,11 @@ type ClientConfig struct {
 	// System certs are used if it is not set.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
+
+	// SecretRef is the name of the secret that contains the user credential to operate on the member cluster
+	// it must have a "token" key or "tls.crt/tls.key" key pair
+	// +required
+	SecretRef string `json:"secretRef"`
 }
 
 // The managed cluster this Taint is attached to has the "effect" on
@@ -161,7 +162,6 @@ type ManagedClusterStatus struct {
 }
 
 // ManagedClusterVersion represents version information about the managed cluster.
-// TODO add managed agent versions
 type ManagedClusterVersion struct {
 	// Kubernetes is the kubernetes version of managed cluster.
 	// +optional
@@ -211,7 +211,7 @@ const (
 // matches the ResourceList defined in k8s.io/api/core/v1.
 type ResourceList map[ResourceName]resource.Quantity
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+//+kubebuilder:object:root=true
 
 // ManagedClusterList contains a list of ManagedCluster
 type ManagedClusterList struct {

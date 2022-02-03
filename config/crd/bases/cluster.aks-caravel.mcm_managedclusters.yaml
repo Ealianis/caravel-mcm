@@ -62,8 +62,7 @@ spec:
                   cluster has no accessible address for the hub to connect with it.
                 items:
                   description: ClientConfig represents the apiserver address of the
-                    managed cluster. TODO include credential to connect to managed
-                    cluster kube-apiserver
+                    managed cluster.
                   properties:
                     caBundle:
                       description: CABundle is the ca bundle to connect to apiserver
@@ -71,11 +70,17 @@ spec:
                         set.
                       format: byte
                       type: string
+                    secretRef:
+                      description: SecretRef is the name of the secret that contains
+                        the user credential to operate on the member cluster it must
+                        have a "token" key or "tls.crt/tls.key" key pair
+                      type: string
                     url:
                       description: URL is the URL of apiserver endpoint of the managed
                         cluster.
                       type: string
                   required:
+                  - secretRef
                   - url
                   type: object
                 type: array
@@ -151,10 +156,10 @@ spec:
               clusterClaims:
                 description: ClusterClaims represents cluster information that a managed
                   cluster claims, for example a unique cluster identifier (id.k8s.io)
-                  and kubernetes version (kubeversion.aks-caravel.mcm).
-                  They are written from the managed cluster. The set of claims is
-                  not uniform across a fleet, some claims can be vendor or version
-                  specific and may not be included from all managed clusters.
+                  and kubernetes version (kubeversion.aks-caravel.mcm). They are written
+                  from the managed cluster. The set of claims is not uniform across
+                  a fleet, some claims can be vendor or version specific and may not
+                  be included from all managed clusters.
                 items:
                   description: ManagedClusterClaim represents a ClusterClaim collected
                     from a managed cluster.
