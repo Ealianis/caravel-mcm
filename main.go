@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"k8s.io/client-go/kubernetes"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -32,7 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	clusterv1alpha1 "github.com/Ealianis/caravel-mcm/api/v1alpha1"
-	"github.com/Ealianis/caravel-mcm/controllers"
+	"github.com/Ealianis/caravel-mcm/controllers/managedcluster"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -65,6 +67,9 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	config := controllerruntime.GetConfigOrDie()
+	clientSet := kubernetes.NewForConfigOrDie(config)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -78,13 +83,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ManagedClusterReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = (managedcluster.NewController(mgr.GetClient(), clientSet.CoreV1(), mgr.GetScheme())).
+		SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ManagedCluster")
 		os.Exit(1)
 	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -14,12 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package managedcluster
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"github.com/Ealianis/caravel-mcm/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -27,28 +32,58 @@ import (
 
 // ManagedClusterReconciler reconciles a ManagedCluster object
 type ManagedClusterReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	Client       client.Client
+	CoreV1Client corev1.CoreV1Interface
+	Scheme       *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the ManagedCluster object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
+func NewController(kubeClient client.Client, coreV1Client corev1.CoreV1Interface, scheme *runtime.Scheme) *ManagedClusterReconciler {
+	return &ManagedClusterReconciler{
+		Client:       kubeClient,
+		CoreV1Client: coreV1Client,
+		Scheme:       scheme,
+	}
+}
+
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var mc v1alpha1.ManagedCluster
+	err := r.Client.Get(ctx, req.NamespacedName, &mc)
 
+	fmt.Println("Namespace:")
+	fmt.Println(req.Namespace)
+	fmt.Println("NamespacedName:")
+	fmt.Println(req.NamespacedName)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	clientConfigs := mc.Spec.ManagedClusterClientConfigs
+	if len(clientConfigs) < 1 {
+		// Todo - Log & format proper error message.
+		return ctrl.Result{}, errors.New("ManagedCluster has no config")
+	}
+
+	// Todo - ManagedClusterClientConfigs is an array. What is the selection logic?
+	clientConfig := clientConfigs[0]
+	secretRef := clientConfig.SecretRef
+
+	// Todo-  What is the namespace for the secrets?
+	secret, err := r.CoreV1Client.Secrets("cluster").
+		Get(ctx, secretRef, metav1.GetOptions{})
+
+	// ToDo - How to unwrap secret into type desired?
+	sValue := secret.StringData
+
+	//ToDo - Use secret to construct client.
+	fmt.Println(sValue)
 	return ctrl.Result{}, nil
 }
 
@@ -56,6 +91,6 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 func (r *ManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		// For().
+		For(&v1alpha1.ManagedCluster{}).
 		Complete(r)
 }
