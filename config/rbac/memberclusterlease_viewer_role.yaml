@@ -1,24 +1,20 @@
-# permissions for end users to edit memeberclusterleases.
+# permissions for end users to view memberclusterleases.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: memeberclusterlease-editor-role
+  name: memberclusterlease-viewer-role
 rules:
 - apiGroups:
   - cluster.aks-caravel.mcm
   resources:
-  - memeberclusterleases
+  - memberclusterleases
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - cluster.aks-caravel.mcm
   resources:
-  - memeberclusterleases/status
+  - memberclusterleases/status
   verbs:
   - get

@@ -18,17 +18,18 @@ package managedcluster
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"github.com/Ealianis/caravel-mcm/api/v1alpha1"
 	"github.com/Ealianis/caravel-mcm/api/v1alpha1/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -63,14 +64,6 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	var mc v1alpha1.ManagedCluster
 	err := r.Client.Get(ctx, req.NamespacedName, &mc)
 
-	fmt.Println("Namespace:")
-	fmt.Println(req.Namespace)
-	fmt.Println("NamespacedName:")
-	fmt.Println(req.NamespacedName)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	fmt.Println("now in fleet")
 	//Fleet Logic
 	exists, err := r.checkIfFleetExists(mc, req.NamespacedName.Name)
 	if err != nil || exists {
@@ -85,8 +78,7 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	mc.Lease = newLease
 	r.clusterMap[req.NamespacedName.Name] = mc
-	println("This is what happened to the map")
-	println(r.clusterMap[req.NamespacedName.Name].Lease.Spec.FleetID)
+
 	//Creating Clients
 	clientConfigs := mc.Spec.ManagedClusterClientConfigs
 	if len(clientConfigs) < 1 {
@@ -94,11 +86,8 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, errors.WrongUrlOrCredentials()
 	}
 
-	clientConfig := clientConfigs[0]
-	secretRef := clientConfig.SecretRef
-
-	// Todo-  What is the namespace for the secrets?
-	secret, err := r.CoreV1Client.Secrets("cluster").
+	var secretRef string
+	secret, err := r.CoreV1Client.Secrets("member-cluster-kubeconfigs").
 		Get(ctx, secretRef, metav1.GetOptions{})
 
 	//Assuming that there could be more than 1 configs in the array
@@ -106,55 +95,46 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	for _, value := range clientConfigs {
 		if value.SecretRef == secret.Name {
 			url = value.URL
+			secretRef = value.SecretRef
+			break
 		}
 	}
 	if url == "" {
 		return ctrl.Result{}, errors.WrongUrlOrCredentials()
 	}
+	//secret was SecretRef
+	mcKubeconfig, err := r.GetMemberClusterKubeConfig(secretRef, "member-cluster-kubeconfigs")
 
-	sValue := secret.StringData
-	// The stringData field is never output when reading from the API. Therefore using the DataType\
-	client, err := createClient(url, *secret)
+	restConfig, err := clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {
+		return clientcmd.Load([]byte(mcKubeconfig))
+	})
 	if err != nil {
+		log.Error(err, "unable to parse kubeconfig")
 		return ctrl.Result{}, err
 	}
-	// TODO: Use the client
-	client.AppsV1().RESTClient().Get()
-	fmt.Println(sValue)
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return ctrl.Result{}, errors.ClientNotCreated()
+	}
+
+	kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+
 	return ctrl.Result{}, nil
 }
 
-func createClient(url string, secret v1.Secret) (kubernetes.Interface, error) {
-	restConfig := rest.Config{}
-	tlsConfig := restConfig.TLSClientConfig
-	restConfig.Host = url
-	for k, v := range secret.Data {
-		if k == "token" {
-			restConfig.BearerToken = string(Base64Decode(v))
-		} else if k == "tls.crt" {
-			tlsConfig.CertFile = string(Base64Decode(v))
-		} else if k == "tls.key" {
-			tlsConfig.KeyFile = string(Base64Decode(v))
-		} else if k == "ca.crt" {
-			tlsConfig.CAFile = string(Base64Decode(v))
-		}
+func (r *ManagedClusterReconciler) GetMemberClusterKubeConfig(secretName, secretNamespace string) (string, error) {
+	var secret v1.Secret
+	namespacedName := types.NamespacedName{Namespace: secretNamespace, Name: secretName}
+	if err := r.Client.Get(context.Background(), namespacedName, &secret); err != nil {
+		return "", err
 	}
-	var kubeClient, err = kubernetes.NewForConfig(&restConfig)
-	if err != nil {
-		return nil, errors.ClientNotCreated()
-	}
-	return kubeClient, nil
-}
 
-func Base64Decode(message []byte) (b []byte) {
-	var l int
-	var err error
-	b = make([]byte, base64.StdEncoding.DecodedLen(len(message)))
-	l, err = base64.StdEncoding.Decode(b, message)
-	if err != nil {
-		return nil
+	kubeconfig, ok := secret.Data["kubeconfig"]
+	if !ok || len(kubeconfig) == 0 {
+		return "", fmt.Errorf("kubeconfig not found in secret %s", namespacedName)
 	}
-	return b[:l]
+
+	return string(kubeconfig), nil
 }
 
 func (r *ManagedClusterReconciler) checkIfFleetExists(memberCluster v1alpha1.ManagedCluster, ns string) (bool, error) {
