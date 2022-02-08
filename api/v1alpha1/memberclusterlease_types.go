@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// MemeberClusterLeaseSpec defines the desired state of MemeberClusterLease
-type MemeberClusterLeaseSpec struct {
+// MemberClusterLeaseSpec defines the desired state of MemberClusterLease
+type MemberClusterLeaseSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -38,8 +38,8 @@ type MemeberClusterLeaseSpec struct {
 	LastJoinTime metav1.Time `json:"lastJoinTime"`
 }
 
-// MemeberClusterLeaseStatus defines the observed state of MemeberClusterLease
-type MemeberClusterLeaseStatus struct {
+// MemberClusterLeaseStatus defines the observed state of MemberClusterLease
+type MemberClusterLeaseStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -47,24 +47,24 @@ type MemeberClusterLeaseStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// MemeberClusterLease is the Schema for the memeberclusterleases API
-type MemeberClusterLease struct {
+// MemberClusterLease is the Schema for the memberclusterleases API
+type MemberClusterLease struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MemeberClusterLeaseSpec   `json:"spec,omitempty"`
-	Status MemeberClusterLeaseStatus `json:"status,omitempty"`
+	Spec   MemberClusterLeaseSpec   `json:"spec,omitempty"`
+	Status MemberClusterLeaseStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// MemeberClusterLeaseList contains a list of MemeberClusterLease
-type MemeberClusterLeaseList struct {
+// MemberClusterLeaseList contains a list of MemberClusterLease
+type MemberClusterLeaseList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []MemeberClusterLease `json:"items"`
+	Items           []MemberClusterLease `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&MemeberClusterLease{}, &MemeberClusterLeaseList{})
+	SchemeBuilder.Register(&MemberClusterLease{}, &MemberClusterLeaseList{})
 }
