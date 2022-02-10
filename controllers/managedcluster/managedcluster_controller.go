@@ -21,6 +21,8 @@ import (
 	"errors"
 	"github.com/Ealianis/caravel-mcm/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -49,7 +51,6 @@ const (
 )
 
 var (
-	errorInvalidKubeClientConstruction         = errors.New("the ManagedCluster's KubeClient could not be constructed")
 	errorInvalidKubeConfig                     = errors.New("the ManagedCluster's KubeConfig is invalid")
 	errorUnableToFindManagedClusterResource    = errors.New("the ManagedCluster resource could not be retrieved")
 	errorManagedClusterJoinedToDifferentFleet  = errors.New("the ManagedCluster belongs to another fleet")
@@ -93,6 +94,24 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// use kubeclient to do work.
 	if err := r.ReconcileManagedClusterFleetStatus(managedClusterKubeClient); err != nil {
 		log.Error(err, "", nil)
+	}
+
+	nodeList, err := managedClusterKubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	for _, node := range nodeList.Items {
+		mc.Status.Conditions = node.Status.Conditions
+		if mc.Status.Capacity == nil {
+			mc.Status.Capacity = map[v1.ResourceName]resource.Quantity{}
+		}
+		mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
+		if mc.Status.Allocatable == nil {
+			mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
+		}
+		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
+		mc.Status.Version = v1alpha1.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
+	}
+	if err := r.Client.Update(ctx, &mc); err != nil {
+		//todo log error
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
