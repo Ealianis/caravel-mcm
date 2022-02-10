@@ -40,7 +40,7 @@ type MemberClusterLeaseSpec struct {
 
 // MemberClusterLeaseStatus defines the observed state of MemberClusterLease
 type MemberClusterLeaseStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// TODO: INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
 

@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,18 +29,6 @@ type ManagedClusterSpec struct {
 	// If it is empty, the managed cluster has no accessible address for the hub to connect with it.
 	// +optional
 	ManagedClusterClientConfigs []ClientConfig `json:"managedClusterClientConfigs,omitempty"`
-
-	// hubAcceptsClient represents that hub accepts the joining of Klusterlet agent on
-	// the managed cluster with the hub. The default value is false, and can only be set
-	// true when the user on hub has an RBAC rule to UPDATE on the virtual subresource
-	// of managedclusters/accept.
-	// When the value is set true, a namespace whose name is the same as the name of ManagedCluster
-	// is created on the hub. This namespace represents the managed cluster, also role/rolebinding is created on
-	// the namespace to grant the permision of access from the agent on the managed cluster.
-	// When the value is set to false, the namespace representing the managed cluster is
-	// deleted.
-	// +required
-	HubAcceptsClient bool `json:"hubAcceptsClient"`
 
 	// LeaseDurationSeconds is used to coordinate the lease update time of Klusterlet agents on the managed cluster.
 	// If its value is zero, the Klusterlet agent will update its lease every 60 seconds by default
@@ -139,14 +127,14 @@ const (
 // ManagedClusterStatus represents the current status of joined managed cluster.
 type ManagedClusterStatus struct {
 	// Conditions contains the different condition statuses for this managed cluster.
-	Conditions []metav1.Condition `json:"conditions"`
+	Conditions []v1.NodeCondition `json:"conditions"`
 
 	// Capacity represents the total resource capacity from all nodeStatuses
 	// on the managed cluster.
-	Capacity ResourceList `json:"capacity,omitempty"`
+	Capacity v1.ResourceList `json:"capacity,omitempty"`
 
 	// Allocatable represents the total allocatable resources on the managed cluster.
-	Allocatable ResourceList `json:"allocatable,omitempty"`
+	Allocatable v1.ResourceList `json:"allocatable,omitempty"`
 
 	// Version represents the kubernetes version of the managed cluster.
 	Version ManagedClusterVersion `json:"version,omitempty"`
@@ -195,20 +183,6 @@ const (
 	// running with the minimum deployment on this managed cluster
 	ManagedClusterConditionAvailable string = "ManagedClusterConditionAvailable"
 )
-
-// ResourceName is the name identifying various resources in a ResourceList.
-type ResourceName string
-
-const (
-	// ResourceCPU defines the number of CPUs in cores. (500m = .5 cores)
-	ResourceCPU ResourceName = "cpu"
-	// ResourceMemory defines the amount of memory in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
-	ResourceMemory ResourceName = "memory"
-)
-
-// ResourceList defines a map for the quantity of different resources, the definition
-// matches the ResourceList defined in k8s.io/api/core/v1.
-type ResourceList map[ResourceName]resource.Quantity
 
 //+kubebuilder:object:root=true
 

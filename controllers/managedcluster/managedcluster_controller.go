@@ -22,6 +22,7 @@ import (
 	"github.com/Ealianis/caravel-mcm/api/v1alpha1"
 	"github.com/Ealianis/caravel-mcm/api/v1alpha1/errors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,7 +33,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"time"
 )
 
 // ManagedClusterReconciler reconciles a ManagedCluster object
@@ -59,22 +60,28 @@ func NewController(kubeClient client.Client, coreV1Client corev1.CoreV1Interface
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
 
 	var mc v1alpha1.ManagedCluster
 	err := r.Client.Get(ctx, req.NamespacedName, &mc)
 
 	//Fleet Logic
-	exists, err := r.checkIfFleetExists(mc, req.NamespacedName.Name)
+	exists, err := r.IfInFleet(mc, req.NamespacedName.Name)
 	if err != nil || exists {
 		return ctrl.Result{}, err
 	}
+	fmt.Println("name is ")
+	fmt.Println(req.Name)
 
 	// TODO: After creating more fields for lease status, add here.
 	newLease := v1alpha1.MemberClusterLease{
 		TypeMeta:   metav1.TypeMeta{Kind: "MemberClusterLease", APIVersion: "v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{},
-		Spec:       v1alpha1.MemberClusterLeaseSpec{FleetID: r.fleetId},
+		Spec: v1alpha1.MemberClusterLeaseSpec{
+			FleetID:            r.fleetId,
+			LastLeaseRenewTime: metav1.Time{time.Now()},
+			LastJoinTime:       metav1.Time{time.Now()},
+		},
+		Status: v1alpha1.MemberClusterLeaseStatus{},
 	}
 	mc.Lease = newLease
 	r.clusterMap[req.NamespacedName.Name] = mc
@@ -82,17 +89,20 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	//Creating Clients
 	clientConfigs := mc.Spec.ManagedClusterClientConfigs
 	if len(clientConfigs) < 1 {
-		log.Error(errors.WrongUrlOrCredentials(), "ManagedCluster has no config")
-		return ctrl.Result{}, errors.WrongUrlOrCredentials()
+		return ctrl.Result{}, errors.NoConfigFound()
 	}
 
-	var secretRef string
+	var secretRef = "member-cluster-" + req.Name + "-kubeconfig"
 	secret, err := r.CoreV1Client.Secrets("member-cluster-kubeconfigs").
 		Get(ctx, secretRef, metav1.GetOptions{})
 
 	//Assuming that there could be more than 1 configs in the array
 	var url string
+	fmt.Println("url values are: ")
 	for _, value := range clientConfigs {
+		fmt.Println(value.URL)
+		fmt.Println(secret.Name)
+		fmt.Println(secretRef)
 		if value.SecretRef == secret.Name {
 			url = value.URL
 			secretRef = value.SecretRef
@@ -104,20 +114,36 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	//secret was SecretRef
 	mcKubeconfig, err := r.GetMemberClusterKubeConfig(secretRef, "member-cluster-kubeconfigs")
+	if err != nil {
+		return ctrl.Result{}, errors.NoSecretFound()
+	}
 
 	restConfig, err := clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {
 		return clientcmd.Load([]byte(mcKubeconfig))
 	})
-	if err != nil {
-		log.Error(err, "unable to parse kubeconfig")
-		return ctrl.Result{}, err
-	}
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return ctrl.Result{}, errors.ClientNotCreated()
 	}
 
-	kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	fmt.Println("node info")
+	nodeList, err := kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	for _, node := range nodeList.Items {
+		mc.Status.Conditions = node.Status.Conditions
+		if mc.Status.Capacity == nil {
+			mc.Status.Capacity = map[v1.ResourceName]resource.Quantity{}
+		}
+		mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
+		if mc.Status.Allocatable == nil {
+			mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
+		}
+		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
+		mc.Status.Version = v1alpha1.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
+	}
+	if err := r.Client.Update(ctx, &mc); err != nil {
+		fmt.Println("update failed")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -137,7 +163,7 @@ func (r *ManagedClusterReconciler) GetMemberClusterKubeConfig(secretName, secret
 	return string(kubeconfig), nil
 }
 
-func (r *ManagedClusterReconciler) checkIfFleetExists(memberCluster v1alpha1.ManagedCluster, ns string) (bool, error) {
+func (r *ManagedClusterReconciler) IfInFleet(memberCluster v1alpha1.ManagedCluster, ns string) (bool, error) {
 	if value, exists := r.clusterMap[ns]; !exists {
 		fleetId := memberCluster.Lease.Spec.FleetID
 		if fleetId != "" {
