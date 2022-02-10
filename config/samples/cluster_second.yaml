@@ -1,18 +1,18 @@
 apiVersion: cluster.aks-caravel.mcm/v1alpha1
 kind: ManagedCluster
 metadata:
-  name: kind-spoke
+  name: kind-spoke2
 spec:
   managedClusterClientConfigs:
-    - url: localhost:52239
-      secretRef: member-cluster-kind-spoke-kubeconfig
+    - url: localhost:60029
+      secretRef: member-cluster-kind-spoke2-kubeconfig
 status:
   conditions:
     - type: Available
       status: true
       lastHeartbeatTime: '2006-01-02T15:04:05Z07:00'
       lastTransitionTime: '2006-01-02T15:04:05Z07:00'
-      reason: Testing
-      message: TestingMessage
+      reason: Testing2
+      message: TestingMessage2
 
   # TODO(user): Add fields here
