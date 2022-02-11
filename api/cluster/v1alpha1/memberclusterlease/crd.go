@@ -58,7 +58,7 @@ func CreateCustomResourceDefinition(clientSet apiextensionsclientset.Interface, 
 	} else if apierrors.IsAlreadyExists(err) {
 		fmt.Println("CRD MemberClusterLease already exists")
 	} else {
-		fmt.Printf("Fail to create CRD Jinghzhu: %+v\n", err)
+		fmt.Printf("Fail to create CRD MemberClusterLease: %+v\n", err)
 
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func CreateCustomResourceDefinition(clientSet apiextensionsclientset.Interface, 
 	err = wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
 		crd, err = clientSet.ApiextensionsV1beta1().CustomResourceDefinitions().Get(ctx, CRDName, metav1.GetOptions{})
 		if err != nil {
-			fmt.Printf("Fail to wait for CRD Jinghzhu creation: %+v\n", err)
+			fmt.Printf("Fail to wait for CRD MemberClusterLease creation: %+v\n", err)
 
 			return false, err
 		}
@@ -79,7 +79,7 @@ func CreateCustomResourceDefinition(clientSet apiextensionsclientset.Interface, 
 				}
 			case apiextensionsv1beta1.NamesAccepted:
 				if cond.Status == apiextensionsv1beta1.ConditionFalse {
-					fmt.Printf("Name conflict while wait for CRD Jinghzhu creation: %s, %+v\n", cond.Reason, err)
+					fmt.Printf("Name conflict while wait for CRD MemberClusterLease creation: %s, %+v\n", cond.Reason, err)
 				}
 			}
 		}
@@ -92,7 +92,7 @@ func CreateCustomResourceDefinition(clientSet apiextensionsclientset.Interface, 
 		fmt.Println("Try to cleanup")
 		deleteErr := clientSet.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, CRDName, metav1.DeleteOptions{})
 		if deleteErr != nil {
-			fmt.Printf("Fail to delete CRD Jinghzhu: %+v\n", deleteErr)
+			fmt.Printf("Fail to delete CRD MemberClusterLease: %+v\n", deleteErr)
 
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}
