@@ -46,7 +46,7 @@ type ManagedClusterReconciler struct {
 }
 
 const (
-	managedClusterKubeConfigSecretNamespace = "managed-cluster-kubeconfigs"
+	managedClusterKubeConfigSecretNamespace = "member-cluster-kubeconfigs"
 	kubeConfigDataKey                       = "kubeconfig"
 )
 
@@ -87,29 +87,34 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// should have its reconciliation stopped and logged.
 	managedClusterKubeClient, err := r.ConstructManagedClusterKubeClientFromClientConfig(mc.Spec.ManagedClusterClientConfigs)
 	if err != nil {
-		log.Error(err, "", nil)
+		//log.Error(err, "", nil)
 		return ctrl.Result{}, err
 	}
 
 	// use kubeclient to do work.
 	if err := r.ReconcileManagedClusterFleetStatus(managedClusterKubeClient); err != nil {
-		log.Error(err, "", nil)
+		//	log.Error(err, "", nil)
 	}
 
+	if mc.Status.Capacity == nil {
+		mc.Status.Capacity = map[v1.ResourceName]resource.Quantity{}
+	}
+	if mc.Status.Allocatable == nil {
+		mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
+	}
+	if mc.Status.Conditions == nil {
+		mc.Status.Conditions = []v1.NodeCondition{}
+	}
 	nodeList, err := managedClusterKubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	for _, node := range nodeList.Items {
-		mc.Status.Conditions = node.Status.Conditions
-		if mc.Status.Capacity == nil {
-			mc.Status.Capacity = map[v1.ResourceName]resource.Quantity{}
-		}
+		//mc.Status.Conditions = node.Status.Conditions
+		mc.Status.Conditions = append(mc.Status.Conditions, node.Status.Conditions...)
 		mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
-		if mc.Status.Allocatable == nil {
-			mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
-		}
 		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
 		mc.Status.Version = v1alpha1.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
 	}
-	if err := r.Client.Update(ctx, &mc); err != nil {
+
+	if err := r.Client.Status().Update(ctx, &mc); err != nil {
 		//todo log error
 		return ctrl.Result{}, err
 	}
