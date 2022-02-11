@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package memberclusterlease
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,8 +63,4 @@ type MemberClusterLeaseList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []MemberClusterLease `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&MemberClusterLease{}, &MemberClusterLeaseList{})
 }

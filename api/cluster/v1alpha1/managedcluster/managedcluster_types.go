@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package managedcluster
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -53,7 +53,6 @@ type ManagedCluster struct {
 
 	Spec   ManagedClusterSpec   `json:"spec,omitempty"`
 	Status ManagedClusterStatus `json:"status,omitempty"`
-	Lease  MemberClusterLease   `json:"lease,omitempty"`
 }
 
 // ClientConfig represents the apiserver address of the managed cluster.
@@ -191,8 +190,4 @@ type ManagedClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ManagedCluster `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&ManagedCluster{}, &ManagedClusterList{})
 }
