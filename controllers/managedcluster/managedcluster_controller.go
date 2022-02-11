@@ -87,13 +87,13 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// should have its reconciliation stopped and logged.
 	managedClusterKubeClient, err := r.ConstructManagedClusterKubeClientFromClientConfig(mc.Spec.ManagedClusterClientConfigs)
 	if err != nil {
-		//log.Error(err, "", nil)
+		log.Error(err, "", nil)
 		return ctrl.Result{}, err
 	}
 
 	// use kubeclient to do work.
 	if err := r.ReconcileManagedClusterFleetStatus(managedClusterKubeClient); err != nil {
-		//	log.Error(err, "", nil)
+		log.Error(err, "", nil)
 	}
 
 	if mc.Status.Capacity == nil {
@@ -107,7 +107,6 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	nodeList, err := managedClusterKubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	for _, node := range nodeList.Items {
-		//mc.Status.Conditions = node.Status.Conditions
 		mc.Status.Conditions = append(mc.Status.Conditions, node.Status.Conditions...)
 		mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
 		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
