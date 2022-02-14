@@ -26,7 +26,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	clusterv1alpha1 "github.com/Ealianis/caravel-mcm/api/v1alpha1"
+	clusterv1alpha1 "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
