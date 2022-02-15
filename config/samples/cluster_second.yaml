@@ -4,8 +4,8 @@ metadata:
   name: kind-spoke2
 spec:
   managedClusterClientConfigs:
-    - url: localhost:60029
-      secretRef: member-cluster-kind-spoke2-kubeconfig
+    - url: localhost:64669
+      secretRef: managed-cluster-kind-spoke-kubeconfig
 status:
   conditions:
     - type: Available
