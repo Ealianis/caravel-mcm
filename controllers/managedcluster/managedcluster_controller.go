@@ -43,6 +43,7 @@ type ManagedClusterReconciler struct {
 	Scheme       *runtime.Scheme
 	clusterMap   map[string]mct.ManagedCluster
 	fleetId      string
+	secretMap    map[string]string
 }
 
 const (
@@ -56,6 +57,7 @@ var (
 	errorManagedClusterJoinedToDifferentFleet  = errors.New("the ManagedCluster belongs to another fleet")
 	errorMissingManagedClusterClientConfig     = errors.New("the ManagedCluster does not have a valid client configuration")
 	errorMissingManagedClusterKubeConfigSecret = errors.New("the ManagedCluster is missing a KubeConfig secret")
+	errorAssetNotDestroyed                     = errors.New("assets to the ManagedCluster was not successfully deleted")
 )
 
 //+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters,verbs=get;list;watch;create;update;patch;delete
@@ -79,17 +81,20 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	err := r.Client.Get(ctx, req.NamespacedName, &mc)
 
 	if err != nil {
-		log.Error(errorUnableToFindManagedClusterResource, "", nil)
-		return ctrl.Result{}, errorUnableToFindManagedClusterResource
+		log.Error(errorUnableToFindManagedClusterResource, "")
+		err := r.WipeClusterFromHub(ctx, req)
+		if err != nil {
+			log.Error(err, "")
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// Any ManagedCluster that does not have a valid KubeConfig, and thus a KubeClient can not be constructed for,
 	// should have its reconciliation stopped and logged.
 	managedClusterKubeClient, err := r.ConstructManagedClusterKubeClientFromClientConfig(mc.Spec.ManagedClusterClientConfigs)
-
 	if err != nil {
-		log.Error(err, "", nil)
-		return ctrl.Result{}, err
+		log.Error(err, "")
+		return ctrl.Result{}, nil
 	}
 
 	// use kubeclient to do work.
@@ -107,11 +112,12 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
 	}
 	if mc.Status.Conditions == nil {
-		mc.Status.Conditions = []v1.NodeCondition{}
+		mc.Status.Conditions = []metav1.Condition{}
 	}
 	nodeList, err := managedClusterKubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	//managedClusterKubeClient.AppsV1().
 	for _, node := range nodeList.Items {
-		mc.Status.Conditions = append(mc.Status.Conditions, node.Status.Conditions...)
+		//mc.Status.Conditions = append(mc.Status.Conditions, )
 		mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
 		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
 		mc.Status.Version = mct.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
@@ -127,7 +133,6 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.clusterMap = make(map[string]mct.ManagedCluster)
 	r.fleetId = string(uuid.NewUUID())
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -137,7 +142,10 @@ func (r *ManagedClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // InFleet yields a bool indicating if the ManagedCluster is a part of a fleet by checking the details of the Lease.
 func (r *ManagedClusterReconciler) InFleet(memberCluster mct.ManagedCluster, nameSpaceName string) (bool, error) {
-	// todo
+	fleetId := "memberCluster.Lease.Spec.FleetID"
+	if len(fleetId) > 0 {
+		return true, errorManagedClusterJoinedToDifferentFleet
+	}
 	return false, nil
 }
 
@@ -243,4 +251,23 @@ func (r *ManagedClusterReconciler) ConstructKubeClientFromRestConfig(config rest
 	} else {
 		return kubeClient, nil
 	}
+}
+
+func (r *ManagedClusterReconciler) WipeClusterFromHub(
+	ctx context.Context,
+	req ctrl.Request) error {
+
+	var secret v1.Secret
+
+	namespacedName := types.NamespacedName{Namespace: managedClusterKubeConfigSecretNamespace, Name: r.secretMap[req.Name]}
+	if exists := r.Client.Get(context.Background(), namespacedName, &secret); exists == nil {
+		delete(r.secretMap, req.Name)
+		err := r.Client.Delete(ctx, &secret)
+		if err != nil {
+			log.Log.Error(errorAssetNotDestroyed, "")
+			return nil
+		}
+	}
+	log.Log.Info("All Assets related to the name was destroyed")
+	return nil
 }

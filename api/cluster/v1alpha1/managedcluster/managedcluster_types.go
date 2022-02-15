@@ -126,7 +126,7 @@ const (
 // ManagedClusterStatus represents the current status of joined managed cluster.
 type ManagedClusterStatus struct {
 	// Conditions contains the different condition statuses for this managed cluster.
-	Conditions []v1.NodeCondition `json:"conditions"`
+	Conditions []metav1.Condition `json:"conditions"`
 
 	// Capacity represents the total resource capacity from all nodeStatuses
 	// on the managed cluster.

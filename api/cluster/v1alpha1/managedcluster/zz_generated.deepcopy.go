@@ -22,7 +22,8 @@ limitations under the License.
 package managedcluster
 
 import (
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -154,21 +155,21 @@ func (in *ManagedClusterStatus) DeepCopyInto(out *ManagedClusterStatus) {
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]v1.NodeCondition, len(*in))
+		*out = make([]v1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.Capacity != nil {
 		in, out := &in.Capacity, &out.Capacity
-		*out = make(v1.ResourceList, len(*in))
+		*out = make(corev1.ResourceList, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
 	if in.Allocatable != nil {
 		in, out := &in.Allocatable, &out.Allocatable
-		*out = make(v1.ResourceList, len(*in))
+		*out = make(corev1.ResourceList, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
