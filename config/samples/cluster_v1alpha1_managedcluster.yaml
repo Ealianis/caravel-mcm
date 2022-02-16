@@ -10,8 +10,8 @@ status:
   conditions:
     - type: Available
       status: true
-      lastHeartbeatTime: '2006-01-02T15:04:05Z07:00'
-      lastTransitionTime: '2006-01-02T15:04:05Z07:00'
+      observedGeneration: 0
+      lastTransitionTime: 2006-01-02T15:04:05Z
       reason: Testing
       message: TestingMessage
 
