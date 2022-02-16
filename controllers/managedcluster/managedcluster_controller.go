@@ -41,9 +41,7 @@ type ManagedClusterReconciler struct {
 	Client       client.Client
 	CoreV1Client corev1.CoreV1Interface
 	Scheme       *runtime.Scheme
-	clusterMap   map[string]mct.ManagedCluster
 	fleetId      string
-	secretMap    map[string]string
 }
 
 const (
@@ -259,9 +257,8 @@ func (r *ManagedClusterReconciler) WipeClusterFromHub(
 
 	var secret v1.Secret
 
-	namespacedName := types.NamespacedName{Namespace: managedClusterKubeConfigSecretNamespace, Name: r.secretMap[req.Name]}
+	namespacedName := types.NamespacedName{Namespace: managedClusterKubeConfigSecretNamespace, Name: "member-cluster-" + req.Name + "-kubeconfig"}
 	if exists := r.Client.Get(context.Background(), namespacedName, &secret); exists == nil {
-		delete(r.secretMap, req.Name)
 		err := r.Client.Delete(ctx, &secret)
 		if err != nil {
 			log.Log.Error(errorAssetNotDestroyed, "")
