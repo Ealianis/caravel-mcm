@@ -31,50 +31,6 @@ spec:
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
-          lease:
-            description: MemberClusterLease is the Schema for the memberclusterleases
-              API
-            properties:
-              apiVersion:
-                description: 'APIVersion defines the versioned schema of this representation
-                  of an object. Servers should convert recognized schemas to the latest
-                  internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-                type: string
-              kind:
-                description: 'Kind is a string value representing the REST resource
-                  this object represents. Servers may infer this from the endpoint
-                  the client submits requests to. Cannot be updated. In CamelCase.
-                  More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                type: string
-              metadata:
-                type: object
-              spec:
-                description: MemberClusterLeaseSpec defines the desired state of MemberClusterLease
-                properties:
-                  fleetID:
-                    description: the unique ID of the fleet this member cluster belongs
-                      to
-                    type: string
-                  lastJoinTime:
-                    description: LastJoinTime is the last time the hub cluster controller
-                      re-establish connection to the member cluster
-                    format: date-time
-                    type: string
-                  lastLeaseRenewTime:
-                    description: LastLeaseRenewTime is the last time the hub cluster
-                      controller can reach the member cluster
-                    format: date-time
-                    type: string
-                required:
-                - fleetID
-                - lastJoinTime
-                - lastLeaseRenewTime
-                type: object
-              status:
-                description: MemberClusterLeaseStatus defines the observed state of
-                  MemberClusterLease
-                type: object
-            type: object
           metadata:
             type: object
           spec:
