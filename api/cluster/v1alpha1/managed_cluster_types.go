@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package managedcluster
+package v1alpha1
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -125,13 +125,13 @@ const (
 
 // ManagedClusterStatus represents the current status of joined managed cluster.
 type ManagedClusterStatus struct {
-	// Conditions contains the different condition statuses for this managed cluster.
+	//// Conditions contains the different condition statuses for this managed cluster.
 	Conditions []metav1.Condition `json:"conditions"`
 
 	// Capacity represents the total resource capacity from all nodeStatuses
 	// on the managed cluster.
 	Capacity v1.ResourceList `json:"capacity,omitempty"`
-
+	//
 	// Allocatable represents the total allocatable resources on the managed cluster.
 	Allocatable v1.ResourceList `json:"allocatable,omitempty"`
 
@@ -190,4 +190,8 @@ type ManagedClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ManagedCluster `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&ManagedCluster{}, &ManagedClusterList{})
 }

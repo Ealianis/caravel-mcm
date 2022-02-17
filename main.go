@@ -26,7 +26,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	clusterv1alpha1 "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
+	clusterv1alpha1 "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -82,8 +82,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (managedcluster.NewController(mgr.GetClient(), clientSet.CoreV1(), mgr.GetScheme())).
-		SetupWithManager(mgr); err != nil {
+	ManagedClusterReconciler := managedcluster.NewController(mgr.GetClient(), clientSet.CoreV1(), mgr.GetScheme())
+	if err = (ManagedClusterReconciler).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ManagedCluster")
 		os.Exit(1)
 	}

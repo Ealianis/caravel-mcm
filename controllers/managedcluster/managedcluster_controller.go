@@ -19,7 +19,7 @@ package managedcluster
 import (
 	"context"
 	"errors"
-	mct "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
+	mct "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,10 +58,6 @@ var (
 	errorAssetNotDestroyed                     = errors.New("assets to the ManagedCluster was not successfully deleted")
 )
 
-//+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters/finalizers,verbs=update
-
 func NewController(kubeClient client.Client, coreV1Client corev1.CoreV1Interface, scheme *runtime.Scheme) *ManagedClusterReconciler {
 	return &ManagedClusterReconciler{
 		Client:       kubeClient,
@@ -69,6 +65,10 @@ func NewController(kubeClient client.Client, coreV1Client corev1.CoreV1Interface
 		Scheme:       scheme,
 	}
 }
+
+//+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters/finalizers,verbs=update
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile

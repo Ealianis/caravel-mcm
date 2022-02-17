@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package memberclusterlease
+package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,10 +32,10 @@ type MemberClusterLeaseSpec struct {
 	FleetID string `json:"fleetID"`
 
 	// LastLeaseRenewTime is the last time the hub cluster controller can reach the member cluster
-	LastLeaseRenewTime metav1.Time `json:"lastLeaseRenewTime"`
+	LastLeaseRenewTime *metav1.Time `json:"lastLeaseRenewTime"`
 
 	// LastJoinTime is the last time the hub cluster controller re-establish connection to the member cluster
-	LastJoinTime metav1.Time `json:"lastJoinTime"`
+	LastJoinTime *metav1.Time `json:"lastJoinTime"`
 }
 
 // MemberClusterLeaseStatus defines the observed state of MemberClusterLease
@@ -63,4 +63,8 @@ type MemberClusterLeaseList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []MemberClusterLease `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&MemberClusterLease{}, &MemberClusterLeaseList{})
 }
