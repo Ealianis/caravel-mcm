@@ -19,7 +19,7 @@ package managedcluster
 import (
 	"context"
 	"errors"
-	mct "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
+	mct "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
