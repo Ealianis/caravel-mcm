@@ -19,10 +19,11 @@ package managedcluster
 import (
 	"context"
 	"errors"
-	"fmt"
 	mct "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
-	mclt "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/memberclusterlease"
+	mcl "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/memberclusterlease"
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +33,6 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -73,22 +73,25 @@ func NewController(kubeClient client.Client, coreV1Client corev1.CoreV1Interface
 }
 
 func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	var mc mct.ManagedCluster
 	err := r.Client.Get(ctx, req.NamespacedName, &mc)
 
 	if err != nil {
-		log.Error(errorUnableToFindManagedClusterResource, "", nil)
+		logger.Error(errorUnableToFindManagedClusterResource, "", nil)
 		return ctrl.Result{}, errorUnableToFindManagedClusterResource
 	}
 
-	// Any ManagedCluster that does not have a valid KubeConfig, and thus a KubeClient can not be constructed for,
-	// should have its reconciliation stopped and logged.
 	cs, err := r.ConstructClientSetFromClientConfig(mc.Spec.ManagedClusterClientConfigs)
-
 	if err != nil {
-		log.Error(err, "", nil)
+		logger.Error(err, "", nil)
+		return ctrl.Result{}, err
+	}
+
+	err = r.ReconcileManagedClusterFleetStatus(ctx, mc, logger)
+	if err != nil {
+		logger.Error(err, "", nil)
 		return ctrl.Result{}, err
 	}
 
@@ -117,38 +120,49 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
+func (r *ManagedClusterReconciler) UpdateManagedCluster(ctx context.Context, managedCluster mct.ManagedCluster) error {
+	if err := r.Client.Status().Update(ctx, &managedCluster); err != nil {
+		return err
+	} else {
+		return nil
+	}
+}
+
 // ReconcileManagedClusterFleetStatus reconciles the managed cluster's state with respect to its membership to the fleet.
-func (r *ManagedClusterReconciler) ReconcileManagedClusterFleetStatus(ctx context.Context, managedCluster mct.ManagedCluster) error {
-	c, err := r.ConstructCRClientFromClientConfigs(managedCluster.Spec.ManagedClusterClientConfigs)
+func (r *ManagedClusterReconciler) ReconcileManagedClusterFleetStatus(ctx context.Context, mc mct.ManagedCluster, logger logr.Logger) error {
+	c, err := r.ConstructCRClientFromClientConfigs(mc.Spec.ManagedClusterClientConfigs)
 	if err != nil {
+		_ = append(mc.Status.ClusterClaims, mct.ManagedClusterClaim{Name: "ConnectionState", Value: mct.ManagedClusterTaintUnreachable})
+		if updateErr := r.UpdateManagedCluster(ctx, mc); updateErr != nil {
+			err = updateErr
+		}
 		return err
 	}
 
-	var crd mclt.MemberClusterLease
-	err = c.Get(ctx, client.ObjectKey{Name: "sdf"}, &crd)
+	c.Scheme().AddKnownTypes(mcl.SchemeGroupVersion, &mcl.MemberClusterLease{}, &mcl.MemberClusterLeaseList{})
+
+	// Reconcile member cluster lease
+	var lease mcl.MemberClusterLease
+	err = c.Get(ctx, client.ObjectKey{Namespace: "default", Name: "clusterlease"}, &lease)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		if k8sErrors.IsNotFound(err) {
+			newLease := GenerateNewLease()
+			err = c.Create(ctx, &newLease)
+			return err
+		} else {
+			return err
+		}
+	} else {
+		// Lease found. This Fleet's lease?
+		if lease.Spec.FleetID == "todo-fleetid" {
+			lease.Spec.LastLeaseRenewTime = metav1.Now()
+		} else {
+			// Cluster belongs to a different fleet. We should remove the data / secret from the hub cluster.
+			// Todo - Delete MC Secret using secret ref.
+		}
 	}
 
-	fmt.Println(crd.Name)
 	return nil
-
-	//Fleet Logic
-	// ToDo : No, this would prevent any reconciliation of a fleet after it was joined.
-	//exists, err := r.InFleet(mc, req.NamespacedName.Name)
-	//if err != nil || exists {
-	//	return ctrl.Result{}, err
-	//}
-
-	// TODO: After creating more fields for lease status, add here.
-	//newLease := v1alpha1.MemberClusterLease{
-	//	TypeMeta:   metav1.TypeMeta{Kind: "MemberClusterLease", APIVersion: "v1alpha1"},
-	//	ObjectMeta: metav1.ObjectMeta{},
-	//	Spec:       v1alpha1.MemberClusterLeaseSpec{FleetID: r.fleetId},
-	//}
-	//mc.Lease = newLease
-	//r.clusterMap[req.NamespacedName.Name] = mc
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -191,7 +205,7 @@ func (r *ManagedClusterReconciler) ConstructClientSetFromClientConfig(clientConf
 //
 func (r *ManagedClusterReconciler) ConstructRestConfigFromManagedClusterClientConfigs(clientConfigs []mct.ClientConfig) (*rest.Config, error) {
 	var clientConfig mct.ClientConfig
-	var encodedKubeConfig string
+	var encodedKubeConfig []byte
 
 	if validConfig, err := r.GetFirstValidClientConfig(clientConfigs); err != nil {
 		return nil, err
@@ -205,7 +219,7 @@ func (r *ManagedClusterReconciler) ConstructRestConfigFromManagedClusterClientCo
 		encodedKubeConfig = data
 	}
 
-	if restConfig, err := r.GenerateRestConfigFromKubeConfigSecret(encodedKubeConfig); err != nil {
+	if restConfig, err := clientcmd.RESTConfigFromKubeConfig(encodedKubeConfig); err != nil {
 		return nil, err
 	} else {
 		return restConfig, nil
@@ -229,32 +243,38 @@ func (r *ManagedClusterReconciler) GetFirstValidClientConfig(clientConfigs []mct
 }
 
 // GetMemberClusterKubeConfig retrieves the encoded KubeConfig string that is stored within a secret.
-func (r *ManagedClusterReconciler) GetMemberClusterKubeConfig(secretName string, secretNamespace string) (string, error) {
+func (r *ManagedClusterReconciler) GetMemberClusterKubeConfig(secretName string, secretNamespace string) ([]byte, error) {
 	var secret v1.Secret
 	namespacedName := types.NamespacedName{Namespace: secretNamespace, Name: secretName}
 	if err := r.Client.Get(context.Background(), namespacedName, &secret); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	kubeConfig, ok := secret.Data[KubeConfigDataKey]
 	if !ok || len(kubeConfig) == 0 {
-		return "", errorMissingManagedClusterKubeConfigSecret
+		return nil, errorMissingManagedClusterKubeConfigSecret
 	}
 
-	return string(kubeConfig), nil
+	return kubeConfig, nil
 }
 
-// GenerateRestConfigFromKubeConfigSecret constructs a configuration structure used by kubernetes client construction.
-func (r *ManagedClusterReconciler) GenerateRestConfigFromKubeConfigSecret(encodedKubeConfig string) (*rest.Config, error) {
-	restConfig, err := clientcmd.BuildConfigFromKubeconfigGetter(
-		"",
-		func() (*clientcmdapi.Config, error) {
-			return clientcmd.Load([]byte(encodedKubeConfig))
-		})
+func GenerateNewLease() mcl.MemberClusterLease {
+	return mcl.MemberClusterLease{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       mcl.Kind,
+			APIVersion: mcl.GroupVersion,
+		},
 
-	if err != nil {
-		return nil, err
-	} else {
-		return restConfig, nil
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "clusterlease",
+			Namespace: "default",
+		},
+
+		Spec: mcl.MemberClusterLeaseSpec{
+			FleetID:            "fleetidexample",
+			LastLeaseRenewTime: metav1.Now(),
+			LastJoinTime:       metav1.Now(),
+		},
+		Status: mcl.MemberClusterLeaseStatus{},
 	}
 }

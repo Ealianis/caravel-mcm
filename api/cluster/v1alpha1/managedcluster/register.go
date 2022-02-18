@@ -2,6 +2,7 @@ package managedcluster
 
 import (
 	cluster "github.com/Ealianis/caravel-mcm/api/cluster"
+	"github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -11,15 +12,11 @@ const (
 	// Kind is normally the CamelCased singular type. The resource manifest uses this.
 	Kind string = "ManagedCluster"
 	// GroupVersion is the version.
-	GroupVersion string = "v1alpha1"
+	GroupVersion string = v1alpha1.Version
 	// Plural is the plural name used in /apis/<group>/<version>/<plural>
 	Plural string = "ManagedClusters"
 	// Singular is used as an alias on kubectl for display.
 	Singular string = "ManagedCluster"
-	// CRDName is the CRD name for MemberClusterLease.
-	CRDName string = Plural + "." + cluster.GroupName
-	// ShortName is the short alias for the CRD.
-	ShortName string = "mc"
 )
 
 var (
