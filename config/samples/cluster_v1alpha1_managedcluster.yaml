@@ -8,8 +8,8 @@ spec:
       secretRef: member-cluster-kind-spoke-kubeconfig
 status:
   conditions:
-    - type: Available
-      status: true
+    - type: Failed
+      status: False
       observedGeneration: 1
       lastTransitionTime: 2006-01-02T15:04:05Z07:00
       reason: Testing

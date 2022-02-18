@@ -120,18 +120,11 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
 		mc.Status.Version = v1alpha1.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
 	}
-	//conditionsList, _ := managedClusterKubeClient.
-	//nodeList, err := managedClusterKubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	//for _, node := range nodeList.Items {
-	//	mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
-	//	mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
-	//	mc.Status.Version = mct.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
-	//}
-
 	if err := r.Client.Status().Update(ctx, &mc); err != nil {
 		//todo log error
 		return ctrl.Result{}, err
 	}
+	log.Info("ManagedCluster was successfully reconciled.")
 
 	return ctrl.Result{}, nil
 }
