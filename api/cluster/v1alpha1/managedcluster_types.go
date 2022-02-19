@@ -1,19 +1,15 @@
 /*
 Copyright 2022.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package v1alpha1
 
 import (
@@ -21,21 +17,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ManagedClusterSpec defines the desired state of ManagedCluster
 type ManagedClusterSpec struct {
 	// ManagedClusterClientConfigs represents a list of the apiserver address of the managed cluster.
 	// If it is empty, the managed cluster has no accessible address for the hub to connect with it.
 	// +optional
 	ManagedClusterClientConfigs []ClientConfig `json:"managedClusterClientConfigs,omitempty"`
-
 	// LeaseDurationSeconds is used to coordinate the lease update time of Klusterlet agents on the managed cluster.
 	// If its value is zero, the Klusterlet agent will update its lease every 60 seconds by default
 	// +optional
 	// +kubebuilder:default=60
 	LeaseDurationSeconds int32 `json:"leaseDurationSeconds,omitempty"`
-
 	// Taints is a property of managed cluster that allow the cluster to be repelled when scheduling.
 	// Taints, including 'ManagedClusterUnavailable' and 'ManagedClusterUnreachable', can not be added/removed by agent
 	// running on the managed cluster; while it's fine to add/remove other taints from either hub cluser or managed cluster.
@@ -45,14 +37,12 @@ type ManagedClusterSpec struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-
 // ManagedCluster is the Schema for the managedclusters API
 type ManagedCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   ManagedClusterSpec   `json:"spec,omitempty"`
-	Status ManagedClusterStatus `json:"status,omitempty"`
+	Spec              ManagedClusterSpec   `json:"spec,omitempty"`
+	Status            ManagedClusterStatus `json:"status,omitempty"`
 }
 
 // ClientConfig represents the apiserver address of the managed cluster.
@@ -60,12 +50,10 @@ type ClientConfig struct {
 	// URL is the URL of apiserver endpoint of the managed cluster.
 	// +required
 	URL string `json:"url"`
-
 	// CABundle is the ca bundle to connect to apiserver of the managed cluster.
 	// System certs are used if it is not set.
 	// +optional
 	CABundle []byte `json:"caBundle,omitempty"`
-
 	// SecretRef This will make sure that the secret we are looking at is a correct [Secret]
 	SecretRef string `json:"secretRef"`
 }
@@ -95,7 +83,6 @@ type Taint struct {
 	// +required
 	TimeAdded metav1.Time `json:"timeAdded"`
 }
-
 type TaintEffect string
 
 const (
@@ -111,7 +98,6 @@ const (
 	// 2) they have already had the cluster in their cluster decisions;
 	TaintEffectNoSelectIfNew TaintEffect = "NoSelectIfNew"
 )
-
 const (
 	// ManagedClusterTaintUnavailable is the key of the taint added to a managed cluster when it is not available.
 	// To be specific, the cluster has a condtion 'ManagedClusterConditionAvailable' with status of 'False';
@@ -127,17 +113,13 @@ const (
 type ManagedClusterStatus struct {
 	// Conditions contains the different condition statuses for this managed cluster.
 	Conditions []metav1.Condition `json:"conditions"`
-
 	// Capacity represents the total resource capacity from all nodeStatuses
 	// on the managed cluster.
 	Capacity v1.ResourceList `json:"capacity,omitempty"`
-
 	// Allocatable represents the total allocatable resources on the managed cluster.
 	Allocatable v1.ResourceList `json:"allocatable,omitempty"`
-
 	// Version represents the kubernetes version of the managed cluster.
 	Version ManagedClusterVersion `json:"version,omitempty"`
-
 	// ClusterClaims represents cluster information that a managed cluster claims,
 	// for example a unique cluster identifier (id.k8s.io) and kubernetes version
 	// (kubeversion.aks-caravel.mcm). They are written from the managed
@@ -161,7 +143,6 @@ type ManagedClusterClaim struct {
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name,omitempty"`
-
 	// Value is a claim-dependent string
 	// +kubebuilder:validation:MaxLength=1024
 	// +kubebuilder:validation:MinLength=1
@@ -184,7 +165,6 @@ const (
 )
 
 //+kubebuilder:object:root=true
-
 // ManagedClusterList contains a list of ManagedCluster
 type ManagedClusterList struct {
 	metav1.TypeMeta `json:",inline"`

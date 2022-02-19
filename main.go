@@ -76,6 +76,7 @@ func main() {
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "bbab26f5.aks-caravel.mcm",
 	})
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)

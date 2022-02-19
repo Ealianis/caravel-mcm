@@ -1,0 +1,9 @@
+apiVersion: cluster.aks-caravel.mcm/v1alpha1
+kind: MemberClusterLease
+metadata:
+  name: mcltest
+spec:
+  fleetID: ABC123
+  lastLeaseRenewTime: "2019-11-05T19:29:12Z"
+  lastJoinTime: "2019-11-05T19:29:12Z"
+status:
