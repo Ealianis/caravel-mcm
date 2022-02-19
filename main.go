@@ -26,7 +26,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	managedCluster "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
+	v1alphacluster "github.com/Ealianis/caravel-mcm/api/cluster/v1alpha1/managedcluster"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -44,8 +44,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	utilruntime.Must(managedCluster.AddToScheme(scheme))
+	utilruntime.Must(v1alphacluster.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
