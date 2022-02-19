@@ -22,7 +22,6 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
-//+kubebuilder:object:root=true
 // MemberClusterLeaseSpec defines the desired state of MemberClusterLease
 type MemberClusterLeaseSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
