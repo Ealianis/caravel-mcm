@@ -63,10 +63,6 @@ var (
 	IsConnectedCondition = metav1.Condition{
 		Type: "IsConnected",
 	}
-
-	TypeClient  = "KubeClient"
-	TypeLease   = "MemberClusterLease"
-	TypeCluster = "ManagedCluster"
 )
 
 //+kubebuilder:rbac:groups=cluster.aks-caravel.mcm,resources=managedclusters,verbs=get;list;watch;create;update;patch;delete
@@ -116,9 +112,9 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		meta.SetStatusCondition(&mc.Status.Conditions,
 			metav1.Condition{
 				Status:             metav1.ConditionFalse,
-				Reason:             "failed",
-				Message:            "Client for Cluster is failing",
-				Type:               TypeClient,
+				Reason:             err.Error(),
+				Message:            "Cannot retrieve Resource information from the managed cluster.",
+				Type:               v1alpha1.ResourceConditionUnavailable,
 				LastTransitionTime: metav1.Now(),
 			})
 	} else {
@@ -132,28 +128,9 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		meta.SetStatusCondition(&mc.Status.Conditions,
 			metav1.Condition{
 				Status:             metav1.ConditionTrue,
-				Reason:             "failed",
-				Message:            "Client for Cluster is ready",
-				Type:               TypeClient,
-				LastTransitionTime: metav1.Now(),
-			})
-	}
-	if err != nil {
-		meta.SetStatusCondition(&mc.Status.Conditions,
-			metav1.Condition{
-				Status:             metav1.ConditionFalse,
-				Reason:             "Failed",
-				Message:            "Cluster is failing",
-				Type:               TypeCluster,
-				LastTransitionTime: metav1.Now(),
-			})
-	} else {
-		meta.SetStatusCondition(&mc.Status.Conditions,
-			metav1.Condition{
-				Status:             metav1.ConditionTrue,
-				Reason:             "success",
-				Message:            "Cluster is ready",
-				Type:               TypeCluster,
+				Reason:             "Success",
+				Message:            "Successful on retrieving resource information from the managed cluster.",
+				Type:               v1alpha1.ResourceConditionAvailable,
 				LastTransitionTime: metav1.Now(),
 			})
 	}
