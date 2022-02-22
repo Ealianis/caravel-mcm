@@ -21,9 +21,7 @@ import (
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-//+kubebuilder:object:root=true
 // MemberClusterLeaseSpec defines the desired state of MemberClusterLease
 type MemberClusterLeaseSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster

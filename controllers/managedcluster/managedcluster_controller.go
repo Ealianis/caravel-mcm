@@ -104,21 +104,35 @@ func (r *ManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	if mc.Status.Capacity == nil {
-		mc.Status.Capacity = map[v1.ResourceName]resource.Quantity{}
-	}
-	if mc.Status.Allocatable == nil {
-		mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
-	}
-	if mc.Status.Conditions == nil {
-		mc.Status.Conditions = []metav1.Condition{}
-	}
+	mc.Status.Capacity = map[v1.ResourceName]resource.Quantity{}
+	mc.Status.Allocatable = map[v1.ResourceName]resource.Quantity{}
+
 	nodeList, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	for _, node := range nodeList.Items {
-		//mc.Status.Conditions = append(mc.Status.Conditions, )
-		mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
-		mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
-		mc.Status.Version = v1alpha1.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
+	if err != nil {
+		meta.SetStatusCondition(&mc.Status.Conditions,
+			metav1.Condition{
+				Status:             metav1.ConditionFalse,
+				Reason:             err.Error(),
+				Message:            "Cannot retrieve Resource information from the managed cluster.",
+				Type:               v1alpha1.ResourceConditionUnavailable,
+				LastTransitionTime: metav1.Now(),
+			})
+	} else {
+		for _, node := range nodeList.Items {
+			mc.Status.Capacity[v1.ResourceCPU] = node.Status.Capacity[v1.ResourceCPU]
+			mc.Status.Capacity[v1.ResourceMemory] = node.Status.Capacity[v1.ResourceMemory]
+			mc.Status.Allocatable[v1.ResourceCPU] = node.Status.Allocatable[v1.ResourceCPU]
+			mc.Status.Allocatable[v1.ResourceMemory] = node.Status.Allocatable[v1.ResourceMemory]
+			mc.Status.Version = v1alpha1.ManagedClusterVersion{Kubernetes: node.Status.NodeInfo.KubeletVersion}
+		}
+		meta.SetStatusCondition(&mc.Status.Conditions,
+			metav1.Condition{
+				Status:             metav1.ConditionTrue,
+				Reason:             "Success",
+				Message:            "Successful on retrieving resource information from the managed cluster.",
+				Type:               v1alpha1.ResourceConditionAvailable,
+				LastTransitionTime: metav1.Now(),
+			})
 	}
 
 	if err := r.Client.Status().Update(ctx, &mc); err != nil {

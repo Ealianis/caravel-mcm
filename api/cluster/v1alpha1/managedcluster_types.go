@@ -162,6 +162,10 @@ const (
 	// cluster is available, the kube-apiserver is healthy and the Klusterlet agent is
 	// running with the minimum deployment on this managed cluster
 	ManagedClusterConditionAvailable string = "ManagedClusterConditionAvailable"
+	// ResourceConditionAvailable means the cluster is able to retrieve resource information, such as CPU, RAM, etc.
+	ResourceConditionAvailable string = "ResourceConditionAvailable"
+	// ResourceConditionUnavailable means the cluster is unable to retrieve the cluster resource information.
+	ResourceConditionUnavailable string = "ResourceConditionUnavailable"
 )
 
 //+kubebuilder:object:root=true
