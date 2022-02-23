@@ -152,20 +152,8 @@ type ManagedClusterClaim struct {
 const (
 	// ManagedClusterConditionJoined means the managed cluster has successfully joined the hub.
 	ManagedClusterConditionJoined string = "ManagedClusterJoined"
-	// ManagedClusterConditionHubAccepted means the request to join the cluster is
-	// approved by cluster-admin on hub.
-	ManagedClusterConditionHubAccepted string = "HubAcceptedManagedCluster"
-	// ManagedClusterConditionHubDenied means the request to join the cluster is denied by
-	// cluster-admin on hub.
-	ManagedClusterConditionHubDenied string = "HubDeniedManagedCluster"
-	// ManagedClusterConditionAvailable means the managed cluster is available. If a managed
-	// cluster is available, the kube-apiserver is healthy and the Klusterlet agent is
-	// running with the minimum deployment on this managed cluster
+	// ManagedClusterConditionAvailable means the cluster is able reached and data can be collected / modified.
 	ManagedClusterConditionAvailable string = "ManagedClusterConditionAvailable"
-	// ResourceConditionAvailable means the cluster is able to retrieve resource information, such as CPU, RAM, etc.
-	ResourceConditionAvailable string = "ResourceConditionAvailable"
-	// ResourceConditionUnavailable means the cluster is unable to retrieve the cluster resource information.
-	ResourceConditionUnavailable string = "ResourceConditionUnavailable"
 )
 
 //+kubebuilder:object:root=true
